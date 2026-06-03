@@ -1,0 +1,15 @@
+{
+  "name": "multi-ai-agent-platform",
+  "version": "1.0.0",
+  "description": "Production-ready multi-AI agent platform with NVIDIA NIM integration",
+  "private": true,
+  "scripts": {
+    "install-all": "bash scripts/install.sh",
+    "dev": "bash scripts/dev.sh",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start"
+  }
+}

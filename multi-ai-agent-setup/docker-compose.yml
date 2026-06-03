@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: multi-ai-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NVIDIA_NIM_API_KEY=${NVIDIA_NIM_API_KEY}
+      - NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
+      - PORT=3000
+    volumes:
+      - ./data:/app/data
+    networks:
+      - multi-ai-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: multi-ai-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3000
+    networks:
+      - multi-ai-network
+    depends_on:
+      - backend
+
+networks:
+  multi-ai-network:
+    driver: bridge
+
+volumes:
+  data:

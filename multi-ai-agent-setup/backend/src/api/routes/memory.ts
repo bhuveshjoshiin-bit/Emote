@@ -1,58 +1,73 @@
 import { Router, Request, Response } from 'express';
-import { memoryManager } from '../memory/MemoryManager';
-import { logger } from '../utils/logger';
+import { asyncHandler } from '../middleware/errorHandler';
+import { MemoryManager } from '../../memory/MemoryManager';
 
 const router = Router();
+const memory = new MemoryManager();
 
-router.get('/', (req: Request, res: Response) => {
-  try {
-    const memory = memoryManager.exportMemory();
-    res.json(memory);
-  } catch (error) {
-    logger.error({ error }, 'Memory retrieval error');
-    res.status(500).json({ error: 'Failed to retrieve memory' });
-  }
-});
+router.get(
+  '/',
+  asyncHandler(async (req: Request, res: Response) => {
+    const stats = memory.getMemoryStats();
+    const recent = memory.getRecentMemory(10);
 
-router.get('/recent', (req: Request, res: Response) => {
-  try {
-    const count = parseInt(req.query.count as string) || 20;
-    const memory = memoryManager.getRecentMemory(count);
-    res.json(memory);
-  } catch (error) {
-    logger.error({ error }, 'Recent memory retrieval error');
-    res.status(500).json({ error: 'Failed to retrieve recent memory' });
-  }
-});
+    res.json({
+      success: true,
+      stats,
+      recent,
+    });
+  })
+);
 
-router.get('/agent/:agentId', (req: Request, res: Response) => {
-  try {
-    const memory = memoryManager.getAgentMemory(req.params.agentId);
-    res.json(memory);
-  } catch (error) {
-    logger.error({ error }, 'Agent memory retrieval error');
-    res.status(500).json({ error: 'Failed to retrieve agent memory' });
-  }
-});
+router.get(
+  '/history',
+  asyncHandler(async (req: Request, res: Response) => {
+    const conversations = await memory.getConversationHistory();
+    const tasks = await memory.getTaskHistory();
 
-router.post('/clear/short', (req: Request, res: Response) => {
-  try {
-    memoryManager.clearShortTerm();
-    res.json({ message: 'Short-term memory cleared' });
-  } catch (error) {
-    logger.error({ error }, 'Clear short-term memory error');
-    res.status(500).json({ error: 'Failed to clear memory' });
-  }
-});
+    res.json({
+      success: true,
+      conversations: conversations.length,
+      tasks: tasks.length,
+      data: {
+        conversations,
+        tasks,
+      },
+    });
+  })
+);
 
-router.post('/clear/all', (req: Request, res: Response) => {
-  try {
-    memoryManager.clearAll();
-    res.json({ message: 'All memory cleared' });
-  } catch (error) {
-    logger.error({ error }, 'Clear all memory error');
-    res.status(500).json({ error: 'Failed to clear memory' });
-  }
-});
+router.get(
+  '/export',
+  asyncHandler(async (req: Request, res: Response) => {
+    const exported = await memory.exportMemory();
+    res.json({
+      success: true,
+      data: exported,
+    });
+  })
+);
+
+router.delete(
+  '/clear/short-term',
+  asyncHandler(async (req: Request, res: Response) => {
+    memory.clearShortTerm();
+    res.json({
+      success: true,
+      message: 'Short-term memory cleared',
+    });
+  })
+);
+
+router.delete(
+  '/clear/long-term',
+  asyncHandler(async (req: Request, res: Response) => {
+    await memory.clearLongTerm();
+    res.json({
+      success: true,
+      message: 'Long-term memory cleared',
+    });
+  })
+);
 
 export default router;
